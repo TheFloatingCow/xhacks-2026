@@ -31,6 +31,11 @@ class ChatUI:
         self.port_entry.insert(0, "5000")
         self.port_entry.grid(row=0, column=3, padx=5)
 
+        tk.Label(config_frame, text="Flash Color:").grid(row=1, column=0, padx=5, pady=5)
+        self.color_var = tk.StringVar(value="white")
+        color_menu = tk.OptionMenu(config_frame, self.color_var, "white", "red", "green", "blue", "yellow", "cyan", "magenta", "orange")
+        color_menu.grid(row=1, column=1, padx=5, pady=5, sticky='w')
+
         # Connection Buttons
         btn_frame = tk.Frame(root)
         btn_frame.pack(pady=5)
@@ -40,6 +45,9 @@ class ChatUI:
 
         self.btn_client = tk.Button(btn_frame, text="Connect (Client)", command=self.start_client_mode)
         self.btn_client.pack(side=tk.LEFT, padx=10)
+
+        self.btn_disconnect = tk.Button(btn_frame, text="Disconnect", command=self.disconnect, state='disabled')
+        self.btn_disconnect.pack(side=tk.LEFT, padx=10)
 
         # Chat Display
         self.chat_display = tk.Text(root, state='disabled', height=20, bg="#f0f0f0")
@@ -90,14 +98,16 @@ class ChatUI:
         
         sequence = []
         
-        sequence.append(('black', 500))
+        sequence.append(('black', 1000))
+
+        flash_color = self.color_var.get()
 
         for char in morse_text:
             if char == '.':
-                sequence.append(('white', UNIT))       # Light On (Dot)
+                sequence.append((flash_color, UNIT))       # Light On (Dot)
                 sequence.append(('black', UNIT))       # Light Off (Gap)
             elif char == '-':
-                sequence.append(('white', UNIT * 3))   # Light On (Dash)
+                sequence.append((flash_color, UNIT * 3))   # Light On (Dash)
                 sequence.append(('black', UNIT))       # Light Off (Gap)
             elif char == ' ':
                 sequence.append(('black', UNIT * 2))   # Gap between letters (Total 3 units)
@@ -140,6 +150,21 @@ class ChatUI:
         self.btn_client.config(state='disabled')
         self.ip_entry.config(state='disabled')
         self.port_entry.config(state='disabled')
+        self.btn_disconnect.config(state='normal')
+
+    def unlock_setup(self):
+        """Re-enable connection setup controls after disconnecting"""
+        self.btn_server.config(state='normal')
+        self.btn_client.config(state='normal')
+        self.ip_entry.config(state='normal')
+        self.port_entry.config(state='normal')
+        self.btn_disconnect.config(state='disabled')
+
+    def disconnect(self):
+        """Disconnect from current connection"""
+        self.messenger.cleanup()
+        self.log_message("[DISCONNECTED] Connection closed by user")
+        self.unlock_setup()
 
     def send_msg(self, event=None):
         """Send a message (converts to Morse code)"""
