@@ -7,7 +7,7 @@ A simple Python application that allows sending and receiving messages between c
 
 ### Project Structure
 
-- **decoder/app.py** - Receiver/Server that listens for incoming messages
+- **receiver/app.py** - Receiver/Server that listens for incoming messages
 - **sender/app.py** - Sender/Client that sends messages to a receiver
 
 ### Features
@@ -26,7 +26,7 @@ Ensure you have Python 3.7+ installed, then the application is ready to use (use
 
 #### Starting the Receiver (Server)
 
-In the `decoder/` directory:
+In the `receiver/` directory:
 
 ```bash
 python app.py [port]
@@ -79,7 +79,7 @@ python app.py 192.168.1.100 8080 "This is a test message"
 
 **Terminal 1 - Start the Receiver:**
 ```bash
-cd decoder
+cd receiver
 python app.py
 ```
 
