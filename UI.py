@@ -118,12 +118,12 @@ class ChatUI:
                 sequence.append((flash_color, UNIT))        # Light On (Dot)
                 sequence.append(('black', UNIT))            # Light Off (Gap)
             elif char == '-':
-                sequence.append((flash_color, UNIT * 5))    # Light On (Dash)
+                sequence.append((flash_color, UNIT * 3))    # Light On (Dash)
                 sequence.append(('black', UNIT))            # Light Off (Gap)
             elif char == ' ':
-                sequence.append(('black', UNIT * 5))        # Gap between letters (Total 3 units)
+                sequence.append(('black', UNIT * 3))        # Gap between letters (Total 3 units)
             elif char == '/':
-                sequence.append(('black', UNIT * 5))        # Gap between words (Total 7 units)
+                sequence.append(('black', UNIT * 3))        # Gap between words (Total 7 units)
 
         self.play_morse_sequence(flash_win, sequence)
 
