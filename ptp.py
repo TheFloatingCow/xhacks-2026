@@ -8,9 +8,11 @@ Converts all messages to Morse code before sending
 import socket
 import threading
 import sys
-import time
+import os
+import configparser
+import boto3
 
-# Morse code dictionary
+# Morse code dictionary (fallback if Bedrock fails)
 MORSE_CODE_DICT = {
     'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.',
     'G': '--.', 'H': '....', 'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..',
@@ -24,16 +26,72 @@ MORSE_CODE_DICT = {
     '-': '-....-', '_': '..--.-', '"': '.-..-.', '$': '...-..-', '@': '.--.-.'
 }
 
+# Load AWS credentials from project file
+def load_aws_credentials():
+    """Load AWS credentials from aws_credentials.ini in project directory"""
+    try:
+        config = configparser.ConfigParser()
+        creds_path = os.path.join(os.path.dirname(__file__), 'aws_credentials.ini')
+        config.read(creds_path)
+        
+        return {
+            'aws_access_key_id': config['default']['aws_access_key_id'],
+            'aws_secret_access_key': config['default']['aws_secret_access_key'],
+            'region_name': config['default'].get('region', 'us-east-1')
+        }
+    except Exception as e:
+        print(f"[WARNING] Could not load credentials from aws_credentials.ini: {e}")
+        return {'region_name': 'us-east-1'}
+
+# Initialize Bedrock client with credentials
+creds = load_aws_credentials()
+bedrock_client = boto3.client('bedrock-runtime', **creds)
+
 def text_to_morse(text):
-    """Convert text to Morse code"""
+    """Convert text to Morse code using Amazon Bedrock"""
+    # List of models to try (standard IDs instead of account-specific ARNs)
+    model_ids = [
+        #'anthropic.claude-3-haiku-20240307-v1:0',
+        #'anthropic.claude-3-sonnet-20240229-v1:0',
+        #'meta.llama3-8b-instruct-v1:0',
+        #'amazon.titan-text-express-v1'
+    ]
+    
+    for model_id in model_ids:
+        try:
+            # Call model through Bedrock
+            message = bedrock_client.converse(
+                modelId=model_id,
+                messages=[
+                    {
+                        'role': 'user',
+                        'content': [
+                            {
+                                'text': f'Convert this text to Morse code. Only return the Morse code, nothing else: "{text}"'
+                            }
+                        ]
+                    }
+                ]
+            )
+                
+            morse_code = message['output']['message']['content'][0]['text'].strip()
+            print(f"[BEDROCK] Successfully using {model_id}")
+            return morse_code
+                
+        except Exception as e:
+            continue
+    
+    # Bedrock failed, use fallback
+    print(f"[INFO] Bedrock unavailable. Using local dictionary.")
+    # Fallback to dictionary if Bedrock fails
     morse_code = []
     for char in text.upper():
         if char == ' ':
-            morse_code.append('/')  # Use / for space between words
+            morse_code.append('/')
         elif char in MORSE_CODE_DICT:
             morse_code.append(MORSE_CODE_DICT[char])
         else:
-            morse_code.append('?')  # Unknown character
+            morse_code.append('?')
     return ' '.join(morse_code)
 
 class UnifiedMessenger:
