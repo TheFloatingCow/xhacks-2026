@@ -12,7 +12,7 @@ class ChatUI:
     
     def __init__(self, root):
         self.root = root
-        self.root.title("Morse Flash Messenger")
+        self.root.title("Morssenger")
         self.root.geometry("450x600")
 
         self.messenger = UnifiedMessenger(ui_callback=self.log_message)
@@ -35,6 +35,16 @@ class ChatUI:
         self.color_var = tk.StringVar(value="white")
         color_menu = tk.OptionMenu(config_frame, self.color_var, "white", "red", "green", "blue", "yellow", "cyan", "magenta", "orange")
         color_menu.grid(row=1, column=1, padx=5, pady=5, sticky='w')
+
+        tk.Label(config_frame, text="AI Model:").grid(row=2, column=0, padx=5, pady=5)
+        self.model_var = tk.StringVar(value="None (Local Dictionary)")
+        model_menu = tk.OptionMenu(config_frame, self.model_var, 
+            "None (Local Dictionary)",
+            "Claude 3 Haiku",
+            "Claude 3 Sonnet",
+            "Llama 3 8B",
+            "Titan Text Express")
+        model_menu.grid(row=2, column=1, columnspan=3, padx=5, pady=5, sticky='w')
 
         # Connection Buttons
         btn_frame = tk.Frame(root)
@@ -94,7 +104,7 @@ class ChatUI:
         flash_win.bind("<Escape>", lambda e: flash_win.destroy())
 
         # Define Timing (Speed in milliseconds)
-        UNIT = 50  # Length of a dot
+        UNIT = 200  # Length of a dot
         
         sequence = []
         
@@ -104,15 +114,15 @@ class ChatUI:
 
         for char in morse_text:
             if char == '.':
-                sequence.append((flash_color, UNIT))       # Light On (Dot)
-                sequence.append(('black', UNIT))       # Light Off (Gap)
+                sequence.append((flash_color, UNIT))        # Light On (Dot)
+                sequence.append(('black', UNIT))            # Light Off (Gap)
             elif char == '-':
-                sequence.append((flash_color, UNIT * 3))   # Light On (Dash)
-                sequence.append(('black', UNIT))       # Light Off (Gap)
+                sequence.append((flash_color, UNIT * 5))    # Light On (Dash)
+                sequence.append(('black', UNIT))            # Light Off (Gap)
             elif char == ' ':
-                sequence.append(('black', UNIT * 2))   # Gap between letters (Total 3 units)
+                sequence.append(('black', UNIT * 5))        # Gap between letters (Total 3 units)
             elif char == '/':
-                sequence.append(('black', UNIT * 6))   # Gap between words (Total 7 units)
+                sequence.append(('black', UNIT * 5))        # Gap between words (Total 7 units)
 
         self.play_morse_sequence(flash_win, sequence)
 
@@ -170,7 +180,7 @@ class ChatUI:
         """Send a message (converts to Morse code)"""
         raw_msg = self.msg_entry.get()
         if raw_msg:
-            morse_msg = text_to_morse(raw_msg)
+            morse_msg = text_to_morse(raw_msg, self.model_var.get())
             self.messenger.send_message(morse_msg)
             self.log_message(f"You: {raw_msg}\n -> {morse_msg}")
             self.msg_entry.delete(0, tk.END)

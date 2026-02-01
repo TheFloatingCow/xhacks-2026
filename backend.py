@@ -45,15 +45,33 @@ def load_aws_credentials():
 creds = load_aws_credentials()
 bedrock_client = boto3.client('bedrock-runtime', **creds)
 
-def text_to_morse(text):
+# Model name mapping
+MODEL_MAPPING = {
+    "Claude 3 Haiku": "anthropic.claude-3-haiku-20240307-v1:0",
+    "Claude 3 Sonnet": "anthropic.claude-3-sonnet-20240229-v1:0",
+    "Llama 3 8B": "meta.llama3-8b-instruct-v1:0",
+    "Titan Text Express": "amazon.titan-text-express-v1",
+    "None (Local Dictionary)": None
+}
+
+def text_to_morse(text, selected_model="None (Local Dictionary)"):
     """Convert text to Morse code using Amazon Bedrock or fallback dictionary"""
-    # List of models to try (comment out to disable Bedrock and avoid billing)
-    model_ids = [
-        #'anthropic.claude-3-haiku-20240307-v1:0',
-        #'anthropic.claude-3-sonnet-20240229-v1:0',
-        #'meta.llama3-8b-instruct-v1:0',
-        #'amazon.titan-text-express-v1'
-    ]
+    # Get the model ID from the selection
+    model_id = MODEL_MAPPING.get(selected_model)
+    
+    # If no model selected or None, skip Bedrock
+    if model_id is None:
+        print(f"[INFO] Using local dictionary (AI disabled).")
+        morse_code = []
+        for char in text.upper():
+            if char in MORSE_CODE_DICT:
+                morse_code.append(MORSE_CODE_DICT[char])
+            else:
+                morse_code.append('?')
+        return ' '.join(morse_code)
+    
+    # Try the selected model
+    model_ids = [model_id]
     
     for model_id in model_ids:
         try:
@@ -79,8 +97,8 @@ def text_to_morse(text):
         except Exception as e:
             continue
     
-    # Bedrock failed or disabled, use fallback dictionary
-    print(f"[INFO] Bedrock unavailable. Using local dictionary.")
+    # Bedrock failed, use fallback dictionary
+    print(f"[WARNING] Bedrock model '{selected_model}' failed. Using local dictionary.")
     morse_code = []
     for char in text.upper():
         if char in MORSE_CODE_DICT:
