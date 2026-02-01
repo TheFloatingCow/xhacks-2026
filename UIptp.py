@@ -8,67 +8,50 @@ class UnifiedMessenger:
         self.socket = None
         self.client_socket = None
         self.running = True
-        self.ui_callback = ui_callback  # Function to update the UI
+        self.ui_callback = ui_callback 
         self.mode = None
 
     def start_server(self, port=5000):
-        """Start as a server (listening for connections)"""
         try:
             self.mode = 'server'
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.socket.bind(('0.0.0.0', port))
             self.socket.listen(1)
-            
             self.ui_callback(f"[SERVER] Listening on port {port}...")
-            
             threading.Thread(target=self._accept_connection, daemon=True).start()
-            
         except Exception as e:
             self.ui_callback(f"[ERROR] Server error: {e}")
             self.cleanup()
 
     def _accept_connection(self):
-        """Internal helper to wait for connection in background"""
         try:
             client_socket, client_address = self.socket.accept()
             self.client_socket = client_socket
             self.ui_callback(f"[CONNECTED] {client_address[0]} connected")
-            
-            # Start receive thread
             self.start_receive_thread()
         except Exception as e:
-            if self.running:
-                self.ui_callback(f"[ERROR] Accept error: {e}")
+            if self.running: self.ui_callback(f"[ERROR] Accept error: {e}")
 
     def start_client(self, remote_host, remote_port=5000):
-        """Start as a client (connecting to a server)"""
         try:
             self.mode = 'client'
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.connect((remote_host, remote_port))
             self.client_socket = self.socket
-            
             self.ui_callback(f"[CONNECTED] Connected to {remote_host}:{remote_port}")
-            
-            # Start receive thread
             self.start_receive_thread()
-            
         except Exception as e:
             self.ui_callback(f"[ERROR] Connection failed: {e}")
             self.cleanup()
 
     def start_receive_thread(self):
-        receive_thread = threading.Thread(target=self.receive_messages)
-        receive_thread.daemon = True
-        receive_thread.start()
+        threading.Thread(target=self.receive_messages, daemon=True).start()
 
     def send_message(self, message):
-        """Sends a single message"""
         if not self.client_socket:
             self.ui_callback("[ERROR] Not connected.")
             return
-
         try:
             self.client_socket.send(message.encode('utf-8'))
         except Exception as e:
@@ -76,7 +59,6 @@ class UnifiedMessenger:
             self.cleanup()
 
     def receive_messages(self):
-        """Continuously receive messages"""
         try:
             while self.running:
                 if self.client_socket:
@@ -86,27 +68,22 @@ class UnifiedMessenger:
                             self.ui_callback("[DISCONNECTED] Remote closed connection")
                             self.cleanup()
                             break
-                        
+                        # TRIGGER THE UI UPDATE
                         self.ui_callback(f"Friend: {message}")
-                    except OSError:
-                        break 
+                    except OSError: break 
                     except Exception as e:
                         self.ui_callback(f"[ERROR] Receive error: {e}")
                         break
         except Exception as e:
-            if self.running:
-                self.ui_callback(f"[ERROR] Thread error: {e}")
+            if self.running: self.ui_callback(f"[ERROR] Thread error: {e}")
 
     def cleanup(self):
-        """Clean up resources"""
         self.running = False
         if self.client_socket:
-            try:
-                self.client_socket.close()
+            try: self.client_socket.close()
             except: pass
         if self.socket:
-            try:
-                self.socket.close()
+            try: self.socket.close()
             except: pass
         self.client_socket = None
         self.socket = None
@@ -117,24 +94,21 @@ class ChatUI:
         self.root.title("Unified Message App")
         self.root.geometry("450x550")
 
-        self.root.bind("<Escape>", self.exit_fullscreen)
         self.messenger = UnifiedMessenger(ui_callback=self.log_message)
+
         config_frame = tk.LabelFrame(root, text="Connection Setup")
         config_frame.pack(padx=10, pady=5, fill="x")
 
-        # IP Entry
         tk.Label(config_frame, text="Target IP:").grid(row=0, column=0, padx=5)
         self.ip_entry = tk.Entry(config_frame)
-        self.ip_entry.insert(0, "192.168.1.X") # Placeholder
+        self.ip_entry.insert(0, "192.168.1.X") 
         self.ip_entry.grid(row=0, column=1, padx=5)
 
-        # Port Entry
         tk.Label(config_frame, text="Port:").grid(row=0, column=2, padx=5)
         self.port_entry = tk.Entry(config_frame, width=6)
         self.port_entry.insert(0, "5000")
         self.port_entry.grid(row=0, column=3, padx=5)
 
-        # Buttons
         btn_frame = tk.Frame(root)
         btn_frame.pack(pady=5)
         
@@ -157,28 +131,31 @@ class ChatUI:
         self.btn_send = tk.Button(input_frame, text="Send", command=self.send_msg)
         self.btn_send.pack(side=tk.LEFT)
 
-        # Handle window closing
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
+    def trigger_white_flash(self):
+        """Creates a blank white fullscreen window that dies after 5 seconds"""
+        flash_win = tk.Toplevel(self.root)
+        flash_win.attributes("-fullscreen", True)
+        flash_win.attributes("-topmost", True) # Force it to stay on top
+        flash_win.configure(bg="white")
+        
+        flash_win.bind("<Escape>", lambda e: flash_win.destroy())
+        
+        flash_win.after(5000, flash_win.destroy)
+
     def log_message(self, message):
-        """Updates chat window and triggers Fullscreen on incoming messages"""
+        """Updates chat window and triggers White Flash on incoming messages"""
         def _update():
             self.chat_display.config(state='normal')
             self.chat_display.insert(tk.END, message + "\n")
-            self.chat_display.see(tk.END) # Auto-scroll
+            self.chat_display.see(tk.END)
             self.chat_display.config(state='disabled')
             
             if message.startswith("Friend:"):
-                self.root.deiconify() # Un-minimize
-                self.root.lift()      # Bring to front
-                self.root.focus_force() 
-                self.root.attributes("-fullscreen", True) # Maximize
+                self.trigger_white_flash()
 
         self.root.after(0, _update)
-
-    def exit_fullscreen(self, event=None):
-        """Allows user to press ESC to leave full screen"""
-        self.root.attributes("-fullscreen", False)
 
     def start_server_mode(self):
         port = int(self.port_entry.get())
