@@ -67,16 +67,24 @@ class UnifiedMessenger:
                 self.ui_callback(f"[ERROR] Accept error: {e}")
 
     def start_client(self, remote_host, remote_port=5000):
-        """Start as a client (connecting to a server)"""
+        """Start the client connection in a BACKGROUND thread to avoid freezing"""
+        self.mode = 'client'
+        # Pass the host/port to a new thread
+        threading.Thread(target=self._connect_to_server, args=(remote_host, remote_port), daemon=True).start()
+
+    def _connect_to_server(self, remote_host, remote_port):
+        """Internal helper that runs in the background"""
         try:
-            self.mode = 'client'
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.connect((remote_host, remote_port))
-            self.client_socket = self.socket
+            self.ui_callback(f"[CONNECTING] Trying {remote_host}...")
             
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            
+            # This line blocks, but now it is in a thread, so UI stays alive!
+            self.socket.connect((remote_host, remote_port))
+            
+            self.client_socket = self.socket
             self.ui_callback(f"[CONNECTED] Connected to {remote_host}:{remote_port}")
             
-            # Start receive thread
             self.start_receive_thread()
             
         except Exception as e:
