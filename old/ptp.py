@@ -31,7 +31,7 @@ def load_aws_credentials():
     """Load AWS credentials from aws_credentials.ini in project directory"""
     try:
         config = configparser.ConfigParser()
-        creds_path = os.path.join(os.path.dirname(__file__), 'aws_credentials.ini')
+        creds_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'aws_credentials.ini')
         config.read(creds_path)
         
         return {
@@ -51,8 +51,8 @@ def text_to_morse(text):
     """Convert text to Morse code using Amazon Bedrock"""
     # List of models to try (standard IDs instead of account-specific ARNs)
     model_ids = [
-        #'anthropic.claude-3-haiku-20240307-v1:0',
-        #'anthropic.claude-3-sonnet-20240229-v1:0',
+        'anthropic.claude-3-haiku-20240307-v1:0',
+        'anthropic.claude-3-sonnet-20240229-v1:0',
         #'meta.llama3-8b-instruct-v1:0',
         #'amazon.titan-text-express-v1'
     ]
