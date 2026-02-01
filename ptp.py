@@ -2,12 +2,39 @@
 Unified Message Application
 Allows bidirectional communication - both sending and receiving messages
 Can run as a server (listening) or client (connecting)
+Converts all messages to Morse code before sending
 """
 
 import socket
 import threading
 import sys
 import time
+
+# Morse code dictionary
+MORSE_CODE_DICT = {
+    'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.',
+    'G': '--.', 'H': '....', 'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..',
+    'M': '--', 'N': '-.', 'O': '---', 'P': '.--.', 'Q': '--.-', 'R': '.-.',
+    'S': '...', 'T': '-', 'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-',
+    'Y': '-.--', 'Z': '--..', '0': '-----', '1': '.----', '2': '..---',
+    '3': '...--', '4': '....-', '5': '.....', '6': '-....', '7': '--...',
+    '8': '---..', '9': '----.', '.': '.-.-.-', ',': '--..--', '?': '..--..',
+    "'": '.----.', '!': '-.-.--', '/': '-..-.', '(': '-.--.', ')': '-.--.-',
+    '&': '.-...', ':': '---...', ';': '-.-.-.', '=': '-...-', '+': '.-.-.',
+    '-': '-....-', '_': '..--.-', '"': '.-..-.', '$': '...-..-', '@': '.--.-.'
+}
+
+def text_to_morse(text):
+    """Convert text to Morse code"""
+    morse_code = []
+    for char in text.upper():
+        if char == ' ':
+            morse_code.append('/')  # Use / for space between words
+        elif char in MORSE_CODE_DICT:
+            morse_code.append(MORSE_CODE_DICT[char])
+        else:
+            morse_code.append('?')  # Unknown character
+    return ' '.join(morse_code)
 
 class UnifiedMessenger:
     def __init__(self, mode='server', host='0.0.0.0', port=5000, remote_host=None, remote_port=5000):
@@ -74,7 +101,8 @@ class UnifiedMessenger:
     
     def send_user_messages(self):
         """Handle sending messages from user input"""
-        print("=== Type your messages (type 'quit' or 'exit' to disconnect) ===\n")
+        print("=== Type your messages (type 'quit' or 'exit' to disconnect) ===")
+        print("=== Messages will be converted to Morse code ===\n")
         
         try:
             while self.running:
@@ -90,7 +118,9 @@ class UnifiedMessenger:
                     
                     if self.client_socket:
                         try:
-                            self.client_socket.send(message.encode('utf-8'))
+                            morse_message = text_to_morse(message)
+                            print(f"[MORSE] {morse_message}")
+                            self.client_socket.send(morse_message.encode('utf-8'))
                         except Exception as e:
                             print(f"[ERROR] Failed to send message: {e}")
                             break
