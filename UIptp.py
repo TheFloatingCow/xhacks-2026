@@ -3,7 +3,6 @@ import threading
 import tkinter as tk
 from tkinter import messagebox
 
-# --- Your Logic Class (Adapted for UI) ---
 class UnifiedMessenger:
     def __init__(self, ui_callback):
         self.socket = None
@@ -23,7 +22,6 @@ class UnifiedMessenger:
             
             self.ui_callback(f"[SERVER] Listening on port {port}...")
             
-            # We must run accept() in a thread so the UI doesn't freeze
             threading.Thread(target=self._accept_connection, daemon=True).start()
             
         except Exception as e:
@@ -66,14 +64,13 @@ class UnifiedMessenger:
         receive_thread.start()
 
     def send_message(self, message):
-        """Sends a single message (Event driven, not a loop)"""
+        """Sends a single message"""
         if not self.client_socket:
             self.ui_callback("[ERROR] Not connected.")
             return
 
         try:
             self.client_socket.send(message.encode('utf-8'))
-            # We don't print "You: message" here, the UI handles that display
         except Exception as e:
             self.ui_callback(f"[ERROR] Failed to send: {e}")
             self.cleanup()
@@ -92,7 +89,7 @@ class UnifiedMessenger:
                         
                         self.ui_callback(f"Friend: {message}")
                     except OSError:
-                        break # Socket closed
+                        break 
                     except Exception as e:
                         self.ui_callback(f"[ERROR] Receive error: {e}")
                         break
@@ -114,26 +111,21 @@ class UnifiedMessenger:
         self.client_socket = None
         self.socket = None
 
-
-# --- The UI Class (The Frontend) ---
 class ChatUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Unified Message App")
         self.root.geometry("450x550")
 
-        # Initialize the Messenger logic
-        # We pass 'self.log_message' so the logic can print to our screen
+        self.root.bind("<Escape>", self.exit_fullscreen)
         self.messenger = UnifiedMessenger(ui_callback=self.log_message)
-
-        # --- Top Configuration Area ---
         config_frame = tk.LabelFrame(root, text="Connection Setup")
         config_frame.pack(padx=10, pady=5, fill="x")
 
         # IP Entry
         tk.Label(config_frame, text="Target IP:").grid(row=0, column=0, padx=5)
         self.ip_entry = tk.Entry(config_frame)
-        self.ip_entry.insert(0, "192.168.1.X")
+        self.ip_entry.insert(0, "192.168.1.X") # Placeholder
         self.ip_entry.grid(row=0, column=1, padx=5)
 
         # Port Entry
@@ -152,11 +144,9 @@ class ChatUI:
         self.btn_client = tk.Button(btn_frame, text="Connect (Client)", command=self.start_client_mode)
         self.btn_client.pack(side=tk.LEFT, padx=10)
 
-        # --- Chat Area ---
         self.chat_display = tk.Text(root, state='disabled', height=15, bg="#f0f0f0")
         self.chat_display.pack(padx=10, pady=5, fill="both", expand=True)
 
-        # --- Input Area ---
         input_frame = tk.Frame(root)
         input_frame.pack(pady=10, fill="x", padx=10)
 
@@ -171,15 +161,24 @@ class ChatUI:
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def log_message(self, message):
-        """Thread-safe way to add text to the chat window"""
+        """Updates chat window and triggers Fullscreen on incoming messages"""
         def _update():
             self.chat_display.config(state='normal')
             self.chat_display.insert(tk.END, message + "\n")
             self.chat_display.see(tk.END) # Auto-scroll
             self.chat_display.config(state='disabled')
-        
-        # Tkinter isn't thread-safe, so we use after() to schedule the update on main thread
+            
+            if message.startswith("Friend:"):
+                self.root.deiconify() # Un-minimize
+                self.root.lift()      # Bring to front
+                self.root.focus_force() 
+                self.root.attributes("-fullscreen", True) # Maximize
+
         self.root.after(0, _update)
+
+    def exit_fullscreen(self, event=None):
+        """Allows user to press ESC to leave full screen"""
+        self.root.attributes("-fullscreen", False)
 
     def start_server_mode(self):
         port = int(self.port_entry.get())
@@ -193,7 +192,6 @@ class ChatUI:
         self.messenger.start_client(host, port)
 
     def lock_setup(self):
-        """Disable buttons once started"""
         self.btn_server.config(state='disabled')
         self.btn_client.config(state='disabled')
         self.ip_entry.config(state='disabled')
