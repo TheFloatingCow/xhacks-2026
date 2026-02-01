@@ -14,29 +14,30 @@ class ChatUI:
         self.root = root
         self.root.title("Morssenger")
         self.root.geometry("450x600")
+        self.root.configure(bg="white")
 
         self.messenger = UnifiedMessenger(ui_callback=self.log_message)
 
         # Connection Setup Frame
-        config_frame = tk.LabelFrame(root, text="Connection Setup")
+        config_frame = tk.LabelFrame(root, text="Connection Setup", relief=tk.SOLID, borderwidth=2, bg="white")
         config_frame.pack(padx=10, pady=5, fill="x")
 
-        tk.Label(config_frame, text="Target IP:").grid(row=0, column=0, padx=5)
+        tk.Label(config_frame, text="Target IP:", bg="white").grid(row=0, column=0, padx=5)
         self.ip_entry = tk.Entry(config_frame)
         self.ip_entry.insert(0, "192.168.1.X")
         self.ip_entry.grid(row=0, column=1, padx=5)
 
-        tk.Label(config_frame, text="Port:").grid(row=0, column=2, padx=5)
+        tk.Label(config_frame, text="Port:", bg="white").grid(row=0, column=2, padx=5)
         self.port_entry = tk.Entry(config_frame, width=6)
         self.port_entry.insert(0, "5000")
         self.port_entry.grid(row=0, column=3, padx=5)
 
-        tk.Label(config_frame, text="Flash Color:").grid(row=1, column=0, padx=5, pady=5)
+        tk.Label(config_frame, text="Flash Color:", bg="white").grid(row=1, column=0, padx=5, pady=5)
         self.color_var = tk.StringVar(value="white")
         color_menu = tk.OptionMenu(config_frame, self.color_var, "white", "red", "green", "blue", "yellow", "cyan", "magenta", "orange")
         color_menu.grid(row=1, column=1, padx=5, pady=5, sticky='w')
 
-        tk.Label(config_frame, text="AI Model:").grid(row=2, column=0, padx=5, pady=5)
+        tk.Label(config_frame, text="AI Model:", bg="white").grid(row=2, column=0, padx=5, pady=5)
         self.model_var = tk.StringVar(value="None (Local Dictionary)")
         model_menu = tk.OptionMenu(config_frame, self.model_var, 
             "None (Local Dictionary)",
@@ -47,7 +48,7 @@ class ChatUI:
         model_menu.grid(row=2, column=1, columnspan=3, padx=5, pady=5, sticky='w')
 
         # Connection Buttons
-        btn_frame = tk.Frame(root)
+        btn_frame = tk.Frame(root, bg="white")
         btn_frame.pack(pady=5)
         
         self.btn_server = tk.Button(btn_frame, text="Start Server (Listen)", command=self.start_server_mode)
@@ -60,11 +61,11 @@ class ChatUI:
         self.btn_disconnect.pack(side=tk.LEFT, padx=10)
 
         # Chat Display
-        self.chat_display = tk.Text(root, state='disabled', height=20, bg="#f0f0f0")
+        self.chat_display = tk.Text(root, state='disabled', height=20, bg="#f0f0f0", relief=tk.SOLID, borderwidth=2)
         self.chat_display.pack(padx=10, pady=5, fill="both", expand=True)
 
         # Message Input Frame
-        input_frame = tk.Frame(root)
+        input_frame = tk.Frame(root, bg="white")
         input_frame.pack(pady=10, fill="x", padx=10)
 
         self.msg_entry = tk.Entry(input_frame)
